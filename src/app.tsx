@@ -37,8 +37,8 @@ const DEFAULT_SETTINGS = {
   intgTierPrices: Object.fromEntries(INTEGRATIONS.map(k => [k, {...DEFAULT_INTG_TIER_PRICES}])),
   perReportMonthly: 5, perReportUse: 0.50, reportPackSize: 10, reportPackPrice: 40,
   perDashboardMonthly: 8, perDashboardUse: 0.75, dashPackSize: 10, dashPackPrice: 60,
-  perTemplateMonthly: 10, perTemplateUse: 1.00, templatePackSize: 5, templatePackPrice: 40,
-  perBudgetsProMonthly: 20, perBudgetsProUse: 2.00, budgetsProPackSize: 5, budgetsProPackPrice: 75,
+  perTemplateMonthly: 10, templatePackSize: 5, templatePackPrice: 40,
+  perBudgetsProMonthly: 20, budgetsProPackSize: 5, budgetsProPackPrice: 75,
   marketplaceTake: 10,
   mktReportSellPct: 5, mktDashSellPct: 5,
   mktReportSubPrice: 15, mktDashSubPrice: 25,
@@ -50,8 +50,8 @@ const DEFAULT_HYBRID = {
   intgModes: Object.fromEntries(INTEGRATIONS.map(k => [k, "none"])),
   useReportMonthly: false, useReportPayPerUse: false, useReportPacks: false,
   useDashMonthly: false, useDashPayPerUse: false, useDashPacks: false,
-  useTemplateMonthly: false, useTemplatePayPerUse: false, useTemplatePacks: false,
-  useBudgetsProMonthly: false, useBudgetsProPayPerUse: false, useBudgetsProPacks: false,
+  useTemplateMonthly: false, useTemplatePacks: false,
+  useBudgetsProMonthly: false, useBudgetsProPacks: false,
   useMarketplace: false,
 };
 
@@ -135,10 +135,8 @@ const calcHybridOne = (c, h, s, n) => {
   else if (h.useDashPayPerUse)     b += c.dashPublishedPerMonth*s.perDashboardUse;
   else if (h.useDashPacks)         b += c.dashPerMonth>0 ? Math.ceil(c.dashPerMonth/s.dashPackSize)*s.dashPackPrice : 0;
   if      (h.useTemplateMonthly)   b += c.templatesPerMonth*s.perTemplateMonthly;
-  else if (h.useTemplatePayPerUse) b += c.templatesPerMonth*s.perTemplateUse;
   else if (h.useTemplatePacks)     b += c.templatesPerMonth>0 ? Math.ceil(c.templatesPerMonth/s.templatePackSize)*s.templatePackPrice : 0;
   if      (h.useBudgetsProMonthly)   b += c.budgetsProPerMonth*s.perBudgetsProMonthly;
-  else if (h.useBudgetsProPayPerUse) b += c.budgetsProPerMonth*s.perBudgetsProUse;
   else if (h.useBudgetsProPacks)     b += c.budgetsProPerMonth>0 ? Math.ceil(c.budgetsProPerMonth/s.budgetsProPackSize)*s.budgetsProPackPrice : 0;
   return b;
 };
@@ -161,10 +159,8 @@ function calcHybridMrr(c, h, s) {
   else if (h.useDashPayPerUse)       addOnBase += c.dashPublishedPerMonth * s.perDashboardUse;
   else if (h.useDashPacks)           addOnBase += c.dashPerMonth > 0 ? Math.ceil(c.dashPerMonth / s.dashPackSize) * s.dashPackPrice : 0;
   if      (h.useTemplateMonthly)     addOnBase += c.templatesPerMonth * s.perTemplateMonthly;
-  else if (h.useTemplatePayPerUse)   addOnBase += c.templatesPerMonth * s.perTemplateUse;
   else if (h.useTemplatePacks)       addOnBase += c.templatesPerMonth > 0 ? Math.ceil(c.templatesPerMonth / s.templatePackSize) * s.templatePackPrice : 0;
   if      (h.useBudgetsProMonthly)   addOnBase += c.budgetsProPerMonth * s.perBudgetsProMonthly;
-  else if (h.useBudgetsProPayPerUse) addOnBase += c.budgetsProPerMonth * s.perBudgetsProUse;
   else if (h.useBudgetsProPacks)     addOnBase += c.budgetsProPerMonth > 0 ? Math.ceil(c.budgetsProPerMonth / s.budgetsProPackSize) * s.budgetsProPackPrice : 0;
   // c.mrr is already the actual billed amount — add it directly without re-discounting
   return (h.connMode === "current" ? c.mrr : 0) + toMrr(addOnBase);
@@ -180,21 +176,34 @@ function scaleCustomers(base, targetCount) {
 }
 
 const Card = ({ children, className="", style }) => (
-  <div className={"bg-white rounded-xl shadow p-4 "+className} style={style}>{children}</div>
+  <div className={"bg-white rounded-2xl p-5 "+className} style={{boxShadow:"0 2px 12px rgba(0,0,0,0.07)",border:"1px solid #f1f5f9",...style}}>{children}</div>
 );
 const SectionCard = ({ children, color, className="" }) => (
-  <div className={"rounded-xl shadow p-4 "+className} style={{background:"#fff",borderLeft:`4px solid ${color}`}}>{children}</div>
+  <div className={"rounded-2xl p-5 "+className} style={{background:"#fff",borderLeft:`5px solid ${color}`,boxShadow:"0 2px 12px rgba(0,0,0,0.07)",border:`1px solid ${color}22`,borderLeftWidth:"5px",borderLeftColor:color}}>{children}</div>
 );
-const Slider = ({ label, value, min, max, step, onChange, prefix="", suffix="", hint, color }) => (
-  <div className="mb-3">
-    <div className="flex justify-between text-xs mb-1">
-      <span className="text-gray-600">{label}</span>
-      <span className="font-semibold" style={{color:color||R.primary}}>{prefix}{value}{suffix}</span>
+const Slider = ({ label, value, min, max, step, onChange, prefix="", suffix="", hint, color }) => {
+  const pct = ((value - min) / (max - min) * 100).toFixed(1);
+  return (
+    <div className="mb-4">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-xs font-medium text-gray-500">{label}</span>
+        <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{background:(color||R.primary)+"18",color:color||R.primary}}>{prefix}{value}{suffix}</span>
+      </div>
+      <div className="relative h-5 flex items-center">
+        <div className="absolute w-full h-1.5 rounded-full" style={{background:"#e2e8f0"}}/>
+        <div className="absolute h-1.5 rounded-full" style={{width:pct+"%",background:color||R.primary}}/>
+        <input type="range" min={min} max={max} step={step} value={value}
+          onChange={e=>onChange(Number(e.target.value))}
+          className="absolute w-full opacity-0 cursor-pointer h-5"
+          style={{zIndex:2}}
+        />
+        <div className="absolute w-4 h-4 rounded-full border-2 border-white shadow-md pointer-events-none"
+          style={{left:`calc(${pct}% - 8px)`,background:color||R.primary,boxShadow:"0 1px 4px rgba(0,0,0,0.2)"}}/>
+      </div>
+      {hint && <p className="text-xs text-gray-400 mt-1.5">{hint}</p>}
     </div>
-    <input type="range" min={min} max={max} step={step} value={value} onChange={e=>onChange(Number(e.target.value))} className="w-full" style={{accentColor:color||R.primary}} />
-    {hint && <p className="text-xs text-gray-400 mt-0.5">{hint}</p>}
-  </div>
-);
+  );
+};
 const RadioOpt = ({ name, value, checked, onChange, label, hint, color }) => (
   <label className="flex items-start gap-2 p-2 rounded-lg cursor-pointer border transition mb-1"
     style={checked?{background:color+"18",borderColor:color}:{background:"#f9fafb",borderColor:"#e5e7eb"}}>
@@ -216,30 +225,38 @@ const ToggleOpt = ({ label, checked, onChange, hint, color }) => (
   </label>
 );
 const Tab = ({ active, onClick, children }) => (
-  <button onClick={onClick} className="px-3 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors"
-    style={active?{borderBottomColor:R.primary,color:R.primaryText,background:"#fff"}:{borderBottomColor:"transparent",color:"#6b7280"}}>
+  <button onClick={onClick} className="px-4 py-3 text-sm font-semibold border-b-2 transition-all whitespace-nowrap"
+    style={active?{borderBottomColor:R.primary,color:R.primaryText,background:"#fff"}:{borderBottomColor:"transparent",color:"#64748b",background:"transparent"}}>
     {children}
   </button>
 );
-const MetricBox = ({ label, value, sub, color }) => {
+const MetricBox = ({ label, value, sub, color, icon }) => {
   const styles = {
-    reach: {background:R.primaryLight,border:"1px solid #99e2f0",color:R.primaryText},
-    green: {background:"#f0fdf4",border:"1px solid #86efac",color:"#166534"},
-    amber: {background:"#fffbeb",border:"1px solid #fcd34d",color:"#92400e"},
-    rose:  {background:"#fff1f2",border:"1px solid #fda4af",color:"#9f1239"},
+    reach: {background:"linear-gradient(135deg,#E0F7FC 0%,#B2EBF2 100%)",border:"1px solid #80DEEA",color:R.primaryText,boxShadow:"0 2px 8px rgba(0,180,216,0.15)"},
+    green: {background:"linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%)",border:"1px solid #86efac",color:"#166534",boxShadow:"0 2px 8px rgba(22,163,74,0.12)"},
+    amber: {background:"linear-gradient(135deg,#fffbeb 0%,#fef3c7 100%)",border:"1px solid #fcd34d",color:"#92400e",boxShadow:"0 2px 8px rgba(245,158,11,0.12)"},
+    rose:  {background:"linear-gradient(135deg,#fff1f2 0%,#ffe4e6 100%)",border:"1px solid #fda4af",color:"#9f1239",boxShadow:"0 2px 8px rgba(244,63,94,0.12)"},
   };
+  const s = styles[color] || styles.reach;
   return (
-    <div className="rounded-lg p-3" style={styles[color]||styles.reach}>
-      <p className="text-xs font-medium opacity-70">{label}</p>
-      <p className="text-xl font-bold mt-0.5">{value}</p>
-      {sub && <p className="text-xs opacity-60 mt-0.5">{sub}</p>}
+    <div className="rounded-xl p-4 flex flex-col justify-between transition-transform hover:scale-[1.02]"
+      style={{...s, minHeight:"90px"}}>
+      <div className="flex items-start justify-between mb-2">
+        <p className="text-xs font-semibold uppercase tracking-wide opacity-60">{label}</p>
+        {icon && <span className="text-base opacity-40">{icon}</span>}
+      </div>
+      <div>
+        <p className="text-2xl font-extrabold leading-none">{value}</p>
+        {sub && <p className="text-xs opacity-60 mt-1">{sub}</p>}
+      </div>
     </div>
   );
 };
 const GroupDivider = ({ label, color }) => (
-  <div className="flex items-center gap-3 my-4">
-    <span className="text-xs font-bold px-3 py-1 rounded-full text-white" style={{background:color}}>{label}</span>
-    <div className="flex-1 border-t" style={{borderColor:color+"55"}} />
+  <div className="flex items-center gap-3 mt-6 mb-2">
+    <div className="w-1.5 h-7 rounded-full flex-shrink-0" style={{background:color}}/>
+    <span className="text-base font-extrabold tracking-wide" style={{color}}>{label}</span>
+    <div className="flex-1 h-px" style={{background:`linear-gradient(90deg,${color}44,transparent)`}}/>
   </div>
 );
 
@@ -414,8 +431,8 @@ function RecommendationTab({ data, totalMrr, settings, setSettings, setHybrid, s
       connMode: mode,
       useReportMonthly: true, useReportPayPerUse: false, useReportPacks: false,
       useDashMonthly: true,   useDashPayPerUse: false,   useDashPacks: false,
-      useTemplateMonthly: true, useTemplatePayPerUse: false, useTemplatePacks: false,
-      useBudgetsProMonthly: true, useBudgetsProPayPerUse: false, useBudgetsProPacks: false,
+      useTemplateMonthly: true, useTemplatePacks: false,
+      useBudgetsProMonthly: true, useBudgetsProPacks: false,
       intgModes: anyIntgSplit
         ? Object.fromEntries(INTEGRATIONS.map(k => [k, (splits[k] || 0) > 0 ? "flat" : "none"]))
         : h.intgModes,
@@ -682,6 +699,213 @@ function RecommendationTab({ data, totalMrr, settings, setSettings, setHybrid, s
           ✓ Prices applied — switched to Configure tab
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Industry Benchmarks Tab ──────────────────────────────────────────
+const INDUSTRY_COMPANIES = [
+  { name:"Fathom (fathomhq)", url:"fathomhq.com", rev:"11-25", revLabel:"$5–25M ARR (est.)", pricingType:"tiered", pricingLabel:"Tiered bundles", prices:"Starts ~$53/mo (1 org); scales by # connected company files. ~$280/mo for larger plans. All plans: unlimited users + all features.", notes:"Priced per entity/connection, not per user. Annual discount available.", isCompetitor:true },
+  { name:"Syft Analytics (Xero-owned)", url:"syftanalytics.com", rev:"11-25", revLabel:"$10–25M ARR (est.)", pricingType:"tiered", pricingLabel:"Tiered bundles", prices:"Per-entity plans: Starter, Plus, Advanced. Syft Assist AI add-on per entity. Annual commit + monthly pay option.", notes:"Acquired by Xero 2024. Feature-gated tiers per entity.", isCompetitor:true },
+  { name:"Jirav", url:"jirav.com", rev:"11-25", revLabel:"~$11M ARR (2024)", pricingType:"tiered", pricingLabel:"Tiered bundles", prices:"Starter/Advanced tiers: historical financials, KPIs, budget vs. actuals, AI forecasts. Full FP&A (custom budgets, scenario modeling) at higher tier. Firm/wholesale pricing available.", notes:"FP&A-focused. Contact for pricing. Dual channel: direct + accounting firms.", isCompetitor:true },
+  { name:"Datarails", url:"datarails.com", rev:"25-100", revLabel:"~$51M ARR (est.) — targeting $100M in 2025", pricingType:"custom", pricingLabel:"Custom / Quote", prices:"No public pricing. Enterprise contracts: ~$3,000–$5,000+/mo ($36K–$60K+ ARR). Modules: FP&A, Cash Management, Month-End Close.", notes:"$70M Series C (Jan 2026) at $550M valuation. Excel-native FP&A for mid-market.", isCompetitor:true },
+  { name:"LiveFlow", url:"liveflow.io", rev:"1-10", revLabel:"$1–10M ARR (est.)", pricingType:"custom", pricingLabel:"Custom / Quote", prices:"No public pricing. Third-party estimates: $500+/mo. Multi-entity consolidation specialist (QBO + Xero only). White-glove onboarding.", notes:"Series A 2024. Narrow integration set; premium positioning.", isCompetitor:true },
+  { name:"Spotlight Reporting", url:"spotlightreporting.com", rev:"11-25", revLabel:"$5–20M ARR (est.)", pricingType:"tiered", pricingLabel:"Tiered bundles", prices:"Basic: $329/mo (raised Oct 2025 from $295). SUPER VCFO+: unlimited dashboards. Plans scale by firm size. Annual + monthly options.", notes:"Advisor/firm-focused suite: Reporting, Forecasting, Dashboards, Consolidations.", isCompetitor:true },
+  { name:"Iris Finance", url:"iris.finance", rev:"1-10", revLabel:"$1–10M ARR (est.)", pricingType:"custom", pricingLabel:"Custom / Quote", prices:"AI-native FP&A for CFOs. No public pricing; demo-gated. Covers budgeting, forecasting, board packs.", notes:"Newer entrant, AI-first positioning.", isCompetitor:true },
+  { name:"Clockwork AI", url:"clockwork.ai", rev:"1-10", revLabel:"$1–5M ARR (est.)", pricingType:"tiered", pricingLabel:"Tiered bundles", prices:"Accounting firm-focused FP&A platform. Tiered by # of clients. Positioned as Fathom/Jirav alternative with stronger advisory tooling.", notes:"Targets accountants building advisory practices.", isCompetitor:true },
+  { name:"Cube Software", url:"cubesoftware.com", rev:"11-25", revLabel:"$10–25M ARR (est.)", pricingType:"tiered", pricingLabel:"Tiered bundles", prices:"Starter → Professional → Enterprise. Priced by users + data sources. Excel + Google Sheets native FP&A. Contact for pricing.", notes:"Direct Jirav/Datarails competitor. Strong accountant channel.", isCompetitor:true },
+  { name:"Mosaic Tech", url:"mosaic.tech", rev:"11-25", revLabel:"$5–20M ARR (est.)", pricingType:"custom", pricingLabel:"Custom / Quote", prices:"No public pricing. Strategic finance platform for high-growth companies. Annual contracts. Estimated $1K–$3K+/mo.", notes:"Acquired by Rippling (2024). SaaS-native FP&A with strong headcount planning.", isCompetitor:true },
+  { name:"Futrli (by Sage)", url:"futrli.com", rev:"1-10", revLabel:"Acquired by Sage", pricingType:"tiered", pricingLabel:"Tiered bundles", prices:"Advisor plans from ~$59/mo (1 org) to ~$299/mo (up to 20 orgs). Business plans from ~$39/mo. 3-way forecasting + KPIs. Per-org tiers.", notes:"Sage acquisition. Cash flow forecasting and advisory reporting for accountants.", isCompetitor:true },
+  { name:"Xero", url:"xero.com", rev:"100plus", revLabel:"~$1.7B AUD ARR", pricingType:"tiered", pricingLabel:"Tiered bundles", prices:"Starter $20/mo → Standard $47/mo → Premium $70/mo (US). Unlimited users. Feature-gated tiers. Add-ons: payroll, expenses, projects.", notes:"General ledger, not reporting-focused. Parent company of Syft Analytics. Core Reach integration.", isCompetitor:false },
+  { name:"QuickBooks Online (Intuit)", url:"quickbooks.intuit.com", rev:"100plus", revLabel:"$6B+ total Intuit revenue", pricingType:"tiered", pricingLabel:"Tiered bundles", prices:"Simple Start $30/mo → Essentials $60 → Plus $90 → Advanced $200. Payroll add-on. Annual discount ~50%.", notes:"Dominant SMB accounting platform. Primary data source for Reach.", isCompetitor:false },
+  { name:"HubSpot", url:"hubspot.com", rev:"100plus", revLabel:"~$2.6B ARR (2024)", pricingType:"hybrid", pricingLabel:"Hybrid", prices:"Free tier + Starter/Pro/Enterprise per Hub. Per-seat at Pro/Enterprise. Add-ons à la carte. Bundle discount for multiple Hubs.", notes:"Textbook hybrid: tiered feature bundles × per-seat × optional add-ons. Strong freemium funnel.", isCompetitor:false },
+  { name:"Salesforce", url:"salesforce.com", rev:"100plus", revLabel:"~$35B ARR", pricingType:"alacarte", pricingLabel:"À la carte + tiers", prices:"Starter $25/user/mo → Professional $80 → Enterprise $165 → Unlimited $330. Each Cloud priced separately. Extensive add-on marketplace.", notes:"Per-user base + extensive add-on layer. Enterprise almost always custom.", isCompetitor:false },
+  { name:"Intercom", url:"intercom.com", rev:"100plus", revLabel:"~$300M ARR (est.)", pricingType:"hybrid", pricingLabel:"Hybrid", prices:"Essential $39/seat/mo → Advanced $99 → Expert $139. AI agent (Fin): $0.99/resolved conversation. Add-ons: Proactive Support, Surveys.", notes:"Per-seat base + usage-based AI layer. Industry example of hybrid pricing done well.", isCompetitor:false },
+  { name:"Zapier", url:"zapier.com", rev:"100plus", revLabel:"~$250M ARR (est.)", pricingType:"hybrid", pricingLabel:"Hybrid (tiered + usage)", prices:"Free (100 tasks/mo) → Professional $19.99/mo → Team $69 → Enterprise custom. Tiers = feature access; task volume is the usage meter within each tier.", notes:"Tiers define features; tasks/month scales price within tiers. Strong freemium-to-paid model.", isCompetitor:false },
+  { name:"Twilio", url:"twilio.com", rev:"100plus", revLabel:"~$4.2B ARR", pricingType:"usage", pricingLabel:"Usage-based", prices:"Pure pay-as-you-go. SMS: ~$0.0079/msg. Voice: ~$0.014/min. No monthly minimum; volume discounts at scale.", notes:"Canonical example of pure consumption pricing in infrastructure SaaS.", isCompetitor:false },
+  { name:"Stripe", url:"stripe.com", rev:"100plus", revLabel:"~$20B ARR (est.)", pricingType:"usage", pricingLabel:"Usage-based (transaction %)", prices:"2.9% + 30¢ per successful card charge. No monthly fee. Each product (Radar, Billing, Connect) adds separate usage fees.", notes:"Textbook transaction-based pricing. Each product priced independently.", isCompetitor:false },
+  { name:"Notion", url:"notion.so", rev:"100plus", revLabel:"~$250M ARR (est.)", pricingType:"peruser", pricingLabel:"Per user / seat", prices:"Free → Plus $10/user/mo → Business $15 → Enterprise custom. AI add-on: $8/member/mo. Guest seats free.", notes:"Simple per-seat with optional AI add-on. Good example of modular add-on on top of seat base.", isCompetitor:false },
+  { name:"Monday.com", url:"monday.com", rev:"100plus", revLabel:"~$1B ARR (2024)", pricingType:"tiered", pricingLabel:"Tiered bundles", prices:"Basic $9/seat/mo → Standard $12 → Pro $19 → Enterprise custom. Min 3 seats. Separate products for Work OS, CRM, Dev, Service.", notes:"Per-seat tiered. Clear Good-Better-Best-Custom model.", isCompetitor:false },
+  { name:"Airtable", url:"airtable.com", rev:"100plus", revLabel:"~$450M ARR (est.)", pricingType:"peruser", pricingLabel:"Per user / seat", prices:"Free → Team $20/user/mo → Business $45 → Enterprise custom. Row/record limits + automation runs differ by tier.", notes:"Per-seat with usage caps acting as natural upgrade triggers.", isCompetitor:false },
+  { name:"Baremetrics", url:"baremetrics.com", rev:"1-10", revLabel:"$1–5M ARR (est.)", pricingType:"tiered", pricingLabel:"Tiered (by MRR band)", prices:"~$129/mo at $10K MRR → $249+/mo at $100K+ MRR. Recover (dunning) and Cancellation Insights as paid add-ons.", notes:"Revenue-based pricing — your spend scales with your own success. Popular with SaaS founders.", isCompetitor:false },
+  { name:"ChartMogul", url:"chartmogul.com", rev:"11-25", revLabel:"$5–20M ARR (est.)", pricingType:"tiered", pricingLabel:"Tiered (by MRR band)", prices:"Free (up to $10K MRR) → Scale $100+/mo → Volume custom. CRM add-on available. Flat features per tier.", notes:"Revenue-based pricing similar to Baremetrics. Freemium entry is strong acquisition tool.", isCompetitor:false },
+  { name:"Calendly", url:"calendly.com", rev:"100plus", revLabel:"~$100M+ ARR", pricingType:"peruser", pricingLabel:"Per user / seat", prices:"Free (1 event type) → Standard $10/seat/mo → Teams $16 → Enterprise custom. Feature unlock model.", notes:"Classic per-seat SaaS. Free tier does heavy acquisition lifting.", isCompetitor:false },
+  { name:"Loom (Atlassian)", url:"loom.com", rev:"25-100", revLabel:"Acquired ~$975M (2023)", pricingType:"hybrid", pricingLabel:"Hybrid (seat + usage cap)", prices:"Starter free (25 vids/person) → Business $12.50/creator/mo (unlimited) → Enterprise custom. Storage and video count cap drives upgrades.", notes:"Freemium with hard usage caps that naturally drive conversion. Now bundled into Atlassian.", isCompetitor:false },
+  { name:"ProfitWell (Paddle)", url:"paddle.com", rev:"25-100", revLabel:"Acquired by Paddle", pricingType:"flat", pricingLabel:"Flat rate (free core)", prices:"Metrics product: free forever. Retain (churn reduction): % of recovered revenue. Price Intelligently: custom.", notes:"Used freemium to gain market share, monetizes via high-value add-on services.", isCompetitor:false },
+];
+
+const PRICING_TYPES = [
+  { key:"tiered",   label:"Tiered bundles",        bg:"#B5D4F4", color:"#0C447C" },
+  { key:"hybrid",   label:"Hybrid",                bg:"#CECBF6", color:"#3C3489" },
+  { key:"peruser",  label:"Per user / seat",        bg:"#F5C4B3", color:"#712B13" },
+  { key:"usage",    label:"Usage-based",            bg:"#FAC775", color:"#633806" },
+  { key:"flat",     label:"Flat rate",              bg:"#C0DD97", color:"#27500A" },
+  { key:"custom",   label:"Custom / Quote",         bg:"#D3D1C7", color:"#444441" },
+  { key:"alacarte", label:"À la carte + tiers",     bg:"#9FE1CB", color:"#085041" },
+];
+const REV_BANDS = [
+  { key:"1-10",    label:"$1–10M",   bg:"#EAF3DE", color:"#3B6D11" },
+  { key:"11-25",   label:"$11–25M",  bg:"#E6F1FB", color:"#185FA5" },
+  { key:"25-100",  label:"$25–100M", bg:"#FAEEDA", color:"#854F0B" },
+  { key:"100plus", label:"$100M+",   bg:"#FAECE7", color:"#993C1D" },
+];
+
+function IndustryTab() {
+  const [revFilter, setRevFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+
+  const filtered = INDUSTRY_COMPANIES.filter(c => {
+    const rOk = revFilter==="all" || (revFilter==="competitor" && c.isCompetitor) || c.rev===revFilter;
+    const tOk = typeFilter==="all" || c.pricingType===typeFilter;
+    return rOk && tOk;
+  }).sort((a,b) => {
+    if (a.isCompetitor !== b.isCompetitor) return a.isCompetitor ? -1 : 1;
+    const order:Record<string,number> = {"1-10":0,"11-25":1,"25-100":2,"100plus":3};
+    return (order[a.rev]??0) - (order[b.rev]??0);
+  });
+
+  const getPricingStyle = (type:string) => PRICING_TYPES.find(p=>p.key===type) || {bg:"#e5e7eb",color:"#374151"};
+  const getRevStyle = (rev:string) => REV_BANDS.find(r=>r.key===rev) || {bg:"#e5e7eb",color:"#374151"};
+
+  const FilterBtn = ({active, onClick, children}:{active:boolean,onClick:()=>void,children:React.ReactNode}) => (
+    <button onClick={onClick} className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+      style={active ? {background:"#023E8A",color:"#fff",border:"1px solid #023E8A"} : {background:"#fff",color:"#64748b",border:"1px solid #e2e8f0"}}>
+      {children}
+    </button>
+  );
+
+  return (
+    <div className="space-y-5">
+      {/* Header context */}
+      <div className="rounded-xl p-4" style={{background:"#E0F7FC",border:"1px solid #80DEEA"}}>
+        <p className="text-sm font-semibold" style={{color:"#005F73"}}>🏭 Industry Pricing Benchmarks</p>
+        <p className="text-xs mt-1" style={{color:"#0096B7"}}>
+          {INDUSTRY_COMPANIES.filter(c=>c.isCompetitor).length} direct competitors · {INDUSTRY_COMPANIES.filter(c=>!c.isCompetitor).length} broader SaaS benchmarks · pricing data as of early 2026
+        </p>
+      </div>
+
+      {/* Filters */}
+      <div className="space-y-2">
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide w-24 flex-shrink-0">Show:</span>
+          <FilterBtn active={revFilter==="all"} onClick={()=>setRevFilter("all")}>All ({INDUSTRY_COMPANIES.length})</FilterBtn>
+          <FilterBtn active={revFilter==="competitor"} onClick={()=>setRevFilter("competitor")}>
+            🎯 Competitors ({INDUSTRY_COMPANIES.filter(c=>c.isCompetitor).length})
+          </FilterBtn>
+          {REV_BANDS.map(b=>(
+            <FilterBtn key={b.key} active={revFilter===b.key} onClick={()=>setRevFilter(b.key)}>
+              {b.label} ({INDUSTRY_COMPANIES.filter(c=>c.rev===b.key).length})
+            </FilterBtn>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide w-24 flex-shrink-0">Pricing:</span>
+          <FilterBtn active={typeFilter==="all"} onClick={()=>setTypeFilter("all")}>All types</FilterBtn>
+          {PRICING_TYPES.map(p=>(
+            <FilterBtn key={p.key} active={typeFilter===p.key} onClick={()=>setTypeFilter(p.key)}>{p.label}</FilterBtn>
+          ))}
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap gap-3 items-center text-xs text-gray-500">
+        <span className="font-semibold text-gray-600">Pricing type:</span>
+        {PRICING_TYPES.map(p=>(
+          <span key={p.key} className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{background:p.bg,border:`1px solid ${p.color}44`}}/>
+            {p.label}
+          </span>
+        ))}
+      </div>
+
+      {/* Count */}
+      <p className="text-xs text-gray-400">Showing {filtered.length} of {INDUSTRY_COMPANIES.length} companies</p>
+
+      {/* Cards grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {filtered.map((c,i) => {
+          const ps = getPricingStyle(c.pricingType);
+          const rs = getRevStyle(c.rev);
+          return (
+            <div key={i} className="bg-white rounded-2xl p-4 transition-shadow hover:shadow-md"
+              style={{
+                boxShadow:"0 1px 6px rgba(0,0,0,0.06)",
+                border: c.isCompetitor ? "2px solid #F97316" : "1px solid #f1f5f9",
+              }}>
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <p className="text-sm font-semibold text-gray-800 leading-tight">{c.name}</p>
+                    {c.isCompetitor && (
+                      <span className="text-xs font-semibold px-1.5 py-0.5 rounded" style={{background:"#FFF7ED",color:"#C2410C",border:"1px solid #FED7AA"}}>
+                        competitor
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-0.5">{c.url}</p>
+                </div>
+                <span className="text-xs font-semibold px-2 py-1 rounded-lg flex-shrink-0 text-right" style={{background:ps.bg,color:ps.color}}>
+                  {c.pricingLabel}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                <span className="text-xs font-medium px-2 py-0.5 rounded" style={{background:rs.bg,color:rs.color}}>
+                  {c.revLabel}
+                </span>
+              </div>
+
+              <p className="text-xs text-gray-600 leading-relaxed mb-2">{c.prices}</p>
+              {c.notes && <p className="text-xs text-gray-400 italic leading-relaxed">{c.notes}</p>}
+            </div>
+          );
+        })}
+        {filtered.length===0 && (
+          <div className="col-span-3 text-center py-12 text-gray-400 text-sm">No companies match these filters.</div>
+        )}
+      </div>
+
+      {/* Pricing type summary table */}
+      <Card className="mt-6">
+        <h2 className="font-extrabold text-gray-800 text-sm mb-4">Pricing Model Distribution</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-xs text-gray-500 border-b text-left">
+                <th className="pb-2 pr-4">Pricing Model</th>
+                <th className="pb-2 pr-4">Companies</th>
+                <th className="pb-2 pr-4">Examples</th>
+                <th className="pb-2">Best for</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { type:"tiered",   desc:"3–4 fixed plans, feature-gated. Most common B2B SaaS model (~57% of companies). Avg 3.5 tiers.",    bestFor:"Clear buyer personas, upsell path" },
+                { type:"hybrid",   desc:"Base subscription + usage meter or add-ons. Growing fast — 61% of SaaS now use some hybrid element.", bestFor:"Wide usage variance, expansion revenue" },
+                { type:"peruser",  desc:"Price × number of seats. Simple, predictable. Still used by ~57% as primary model.",                  bestFor:"Collaboration tools, team products" },
+                { type:"usage",    desc:"Pure pay-as-you-go by consumption. Infrastructure-heavy; hard to forecast.",                           bestFor:"APIs, infrastructure, transaction tools" },
+                { type:"custom",   desc:"No public pricing. Demo-gated. Common at enterprise/mid-market where deal size justifies sales motion.", bestFor:"Enterprise, complex implementations" },
+                { type:"alacarte", desc:"Core product + independently priced add-ons. Can grow complex; Salesforce is the extreme example.",    bestFor:"Platform ecosystems, diverse use cases" },
+                { type:"flat",     desc:"Single price, all features. Rare in mainstream SaaS due to inflexibility.",                            bestFor:"Simple products, niche markets" },
+              ].map(row => {
+                const ps = getPricingStyle(row.type);
+                const cos = INDUSTRY_COMPANIES.filter(c=>c.pricingType===row.type);
+                return (
+                  <tr key={row.type} className="border-b last:border-0">
+                    <td className="py-2.5 pr-4">
+                      <span className="text-xs font-semibold px-2 py-1 rounded" style={{background:ps.bg,color:ps.color}}>{ps.label}</span>
+                    </td>
+                    <td className="py-2.5 pr-4 font-semibold text-gray-700">{cos.length}</td>
+                    <td className="py-2.5 pr-4 text-xs text-gray-500">{cos.slice(0,3).map(c=>c.name.split(" ")[0]).join(", ")}{cos.length>3?` +${cos.length-3}`:""}</td>
+                    <td className="py-2.5 text-xs text-gray-500">{row.bestFor}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-xs text-gray-400 mt-3 italic">Source: company websites, G2, Crunchbase, Latka, public filings — compiled early 2026</p>
+      </Card>
     </div>
   );
 }
@@ -994,10 +1218,6 @@ export default function App() {
       const total=applyDisc(data,c=>u(c).templatesPerMonth*settings.perTemplateMonthly);
       return {formula:`${data.length.toLocaleString()} customers × avg ${fmtD(totalTemplatesPerMo/data.length)} templates/mo × $${settings.perTemplateMonthly}/template`, total};
     }
-    if (hybrid.useTemplatePayPerUse) {
-      const total=applyDisc(data,c=>u(c).templatesPerMonth*settings.perTemplateUse);
-      return {formula:`${data.length.toLocaleString()} customers × avg ${fmtD(totalTemplatesPerMo/data.length)} templates/mo × $${settings.perTemplateUse}/use`, total};
-    }
     if (hybrid.useTemplatePacks) {
       const total=applyDisc(data,c=>u(c).templatesPerMonth>0?Math.ceil(u(c).templatesPerMonth/settings.templatePackSize)*settings.templatePackPrice:0);
       return {formula:`avg ${fmtD(totalTemplatesPerMo/data.length)} templates/mo → ceil(÷${settings.templatePackSize}) packs × $${settings.templatePackPrice}`, total};
@@ -1010,10 +1230,6 @@ export default function App() {
     if (hybrid.useBudgetsProMonthly) {
       const total=applyDisc(data,c=>u(c).budgetsProPerMonth*settings.perBudgetsProMonthly);
       return {formula:`${data.length.toLocaleString()} customers × avg ${fmtD(totalBudgetsProPerMo/data.length)} uses/mo × $${settings.perBudgetsProMonthly}/use`, total};
-    }
-    if (hybrid.useBudgetsProPayPerUse) {
-      const total=applyDisc(data,c=>u(c).budgetsProPerMonth*settings.perBudgetsProUse);
-      return {formula:`${data.length.toLocaleString()} customers × avg ${fmtD(totalBudgetsProPerMo/data.length)} uses/mo × $${settings.perBudgetsProUse}/use`, total};
     }
     if (hybrid.useBudgetsProPacks) {
       const total=applyDisc(data,c=>u(c).budgetsProPerMonth>0?Math.ceil(u(c).budgetsProPerMonth/settings.budgetsProPackSize)*settings.budgetsProPackPrice:0);
@@ -1060,10 +1276,8 @@ export default function App() {
         : h.useDashPayPerUse   ? uc.dashPublishedPerMonth*s.perDashboardUse
         : h.useDashPacks       ? (uc.dashPerMonth>0?Math.ceil(uc.dashPerMonth/s.dashPackSize)*s.dashPackPrice:0) : 0;
       const tmplBase = h.useTemplateMonthly    ? uc.templatesPerMonth*s.perTemplateMonthly
-        : h.useTemplatePayPerUse ? uc.templatesPerMonth*s.perTemplateUse
         : h.useTemplatePacks     ? (uc.templatesPerMonth>0?Math.ceil(uc.templatesPerMonth/s.templatePackSize)*s.templatePackPrice:0) : 0;
       const bproBase = h.useBudgetsProMonthly    ? uc.budgetsProPerMonth*s.perBudgetsProMonthly
-        : h.useBudgetsProPayPerUse ? uc.budgetsProPerMonth*s.perBudgetsProUse
         : h.useBudgetsProPacks     ? (uc.budgetsProPerMonth>0?Math.ceil(uc.budgetsProPerMonth/s.budgetsProPackSize)*s.budgetsProPackPrice:0) : 0;
       const breakdown = {
         conn: connMrr,
@@ -1114,15 +1328,15 @@ export default function App() {
 
   if (!authed) return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{background:"linear-gradient(135deg,#023E8A 0%,#00B4D8 100%)"}}>
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm">
-        <div className="text-center mb-6">
-          <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3" style={{background:R.primaryLight}}><span className="text-2xl">🔒</span></div>
-          <h1 className="text-xl font-bold text-gray-800">Reach Pricing Tool</h1>
-          <p className="text-sm text-gray-500 mt-1">Internal use only</p>
+      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm" style={{boxShadow:"0 25px 60px rgba(2,62,138,0.35)"}}>
+        <div className="text-center mb-8">
+          <img src="/reach-pricing-tool/logo.png" alt="Reach Reporting" className="h-10 w-auto mx-auto mb-4"/>
+          <h1 className="text-2xl font-extrabold text-gray-800">Pricing Model</h1>
+          <p className="text-sm text-gray-400 mt-1 font-medium">Internal use only</p>
         </div>
-        <input type="password" placeholder="Enter password" value={pw} onChange={e=>{setPw(e.target.value);setPwErr(false);}} onKeyDown={e=>{if(e.key==="Enter"){if(pw===PASSWORD)setAuthed(true);else setPwErr(true);}}} className={"w-full border rounded-lg px-4 py-2.5 text-sm mb-3 outline-none "+(pwErr?"border-rose-400":"border-gray-300")} />
-        {pwErr&&<p className="text-xs text-rose-500 mb-2">Incorrect password</p>}
-        <button onClick={()=>{if(pw===PASSWORD)setAuthed(true);else setPwErr(true);}} className="w-full text-white rounded-lg py-2.5 text-sm font-semibold" style={{background:R.primary}}>Access Tool</button>
+        <input type="password" placeholder="Enter password" value={pw} onChange={e=>{setPw(e.target.value);setPwErr(false);}} onKeyDown={e=>{if(e.key==="Enter"){if(pw===PASSWORD)setAuthed(true);else setPwErr(true);}}} className={"w-full border-2 rounded-xl px-4 py-3 text-sm mb-3 outline-none transition "+(pwErr?"border-rose-400 bg-rose-50":"border-gray-200 focus:border-blue-400")} />
+        {pwErr&&<p className="text-xs text-rose-500 mb-3 font-medium">Incorrect password. Try again.</p>}
+        <button onClick={()=>{if(pw===PASSWORD)setAuthed(true);else setPwErr(true);}} className="w-full text-white rounded-xl py-3 text-sm font-bold tracking-wide transition hover:opacity-90" style={{background:"linear-gradient(90deg,#023E8A,#00B4D8)"}}>Access Tool →</button>
       </div>
     </div>
   );
@@ -1131,8 +1345,8 @@ export default function App() {
     <div className="min-h-screen flex items-center justify-center p-4" style={{background:"linear-gradient(135deg,#023E8A 0%,#00B4D8 100%)"}}>
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <div className="text-center mb-6">
-          <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3" style={{background:R.primaryLight}}><span className="text-2xl">📊</span></div>
-          <h1 className="text-xl font-bold text-gray-800">Reach Pricing Scenario Modeler</h1>
+          <img src="/reach-pricing-tool/logo.png" alt="Reach Reporting" className="h-10 w-auto mx-auto mb-4"/>
+          <h1 className="text-xl font-extrabold text-gray-800">Pricing Model</h1>
           <p className="text-sm text-gray-500 mt-1">Upload your anonymized customer CSV to begin</p>
         </div>
         <div onClick={()=>fileRef.current.click()} className="rounded-xl p-8 text-center cursor-pointer transition mb-4" style={{border:`2px dashed ${R.primary}`,background:R.primaryLighter}}>
@@ -1147,13 +1361,18 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-screen" style={{background:"#f8fafc"}}>
-      <div className="text-white px-6 py-4 flex items-center justify-between" style={{background:"linear-gradient(90deg,#023E8A 0%,#0096B7 100%)"}}>
-        <div>
-          <h1 className="text-lg font-bold tracking-tight">Reach Pricing Scenario Modeler</h1>
-          <p className="text-xs mt-0.5" style={{color:"#90E0EF"}}>{data.length.toLocaleString()} customers · Feb 2026</p>
+    <div className="min-h-screen" style={{background:"#f1f5f9"}}>
+      {/* Header */}
+      <div className="text-white px-6 py-0 flex items-stretch justify-between" style={{background:"linear-gradient(100deg,#023E8A 0%,#0096B7 60%,#00B4D8 100%)",boxShadow:"0 4px 24px rgba(2,62,138,0.25)"}}>
+        <div className="flex items-center gap-4 py-3">
+          <img src="/reach-pricing-tool/reach_white.png" alt="Reach Reporting" className="h-6 w-auto" />
+          <div className="w-px h-8 bg-white opacity-20"/>
+          <div>
+            <h1 className="text-sm font-extrabold tracking-tight leading-none opacity-90">Pricing Model</h1>
+            <p className="text-xs mt-1 font-medium" style={{color:"#90E0EF"}}>{data.length.toLocaleString()} customers · Feb 2026</p>
+          </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           {tab==="forecast"&&<>
             <button onClick={()=>setForecastView("mrr")} className="px-3 py-1.5 rounded-lg text-xs font-semibold transition" style={forecastView==="mrr"?{background:"#fff",color:R.primaryText}:{background:"rgba(255,255,255,0.15)",color:"#fff"}}>MRR</button>
             <button onClick={()=>setForecastView("arr")} className="px-3 py-1.5 rounded-lg text-xs font-semibold transition" style={forecastView==="arr"?{background:"#fff",color:R.primaryText}:{background:"rgba(255,255,255,0.15)",color:"#fff"}}>ARR</button>
@@ -1163,8 +1382,9 @@ export default function App() {
         </div>
       </div>
 
-      <div className="border-b px-6 flex gap-1 pt-2 overflow-x-auto" style={{background:"#f1f5f9",borderColor:"#e2e8f0"}}>
-        {[["overview","📈 Overview"],["configure","⚙️ Configure"],["scenarios","💾 Scenarios"+(savedScenarios.length>0?` (${savedScenarios.length})`:"")],["forecast","🔮 Forecast"],["recommendation","💡 Recommendation"],["reconciliation","🔍 Reconciliation"]].map(([k,l])=>(
+      {/* Tab bar */}
+      <div className="px-6 flex gap-0 overflow-x-auto" style={{background:"#fff",borderBottom:"1px solid #e2e8f0",boxShadow:"0 1px 4px rgba(0,0,0,0.06)"}}>
+        {[["overview","📈 Overview"],["configure","⚙️ Configure"],["scenarios","💾 Scenarios"+(savedScenarios.length>0?` (${savedScenarios.length})`:"")],["forecast","🔮 Forecast"],["recommendation","💡 Recommendation"],["reconciliation","🔍 Reconciliation"],["industry","🏭 Industry"]].map(([k,l])=>(
           <Tab key={k} active={tab===k} onClick={()=>setTab(k)}>{l}</Tab>
         ))}
       </div>
@@ -1175,21 +1395,44 @@ export default function App() {
         {tab==="overview" && (
           <div className="space-y-6">
             <div className="grid grid-cols-3 gap-3">
-              <MetricBox label="Current MRR" value={fmt(totalMrr)} color="reach"/>
-              <MetricBox label="Current ARR" value={fmt(totalMrr*12)} color="reach"/>
-              <MetricBox label="Total Customers" value={data.length.toLocaleString()} color="green"/>
-              <MetricBox label="Annual Customers" value={annualCount+" ("+(annualCount/data.length*100).toFixed(1)+"%)"} sub={(data.length-annualCount)+" monthly"} color="amber"/>
-              <MetricBox label="Monthly Customers" value={(data.length-annualCount)+" ("+(((data.length-annualCount)/data.length)*100).toFixed(1)+"%)"} color="amber"/>
-              <MetricBox label="Avg MRR / Customer" value={fmt(totalMrr/data.length)} color="reach"/>
-              <MetricBox label="Avg Connections" value={fmtD(avgConn)} color="reach"/>
-              <MetricBox label="Avg Reports/mo" value={fmtD(avgRep)} color="reach"/>
-              <MetricBox label="Avg Downloads/mo" value={fmtD(avgDownloads)} color="reach"/>
-              <MetricBox label="Avg Dashboards/mo" value={fmtD(avgDash)} color="reach"/>
-              <MetricBox label="Avg Templates/mo" value={fmtD(avgTemplate)} color="reach"/>
-              <MetricBox label="Avg Budgets Pro/mo" value={fmtD(avgBudgets)} color="reach"/>
+              <MetricBox label="Current MRR" value={fmt(totalMrr)} color="reach" icon="💰"/>
+              <MetricBox label="Current ARR" value={fmt(totalMrr*12)} color="reach" icon="📅"/>
+              <MetricBox label="Total Customers" value={data.length.toLocaleString()} color="reach" icon="👥"/>
+              <MetricBox label="Annual Customers" value={annualCount+" ("+(annualCount/data.length*100).toFixed(1)+"%)"} sub={(data.length-annualCount)+" monthly"} color="amber" icon="📆"/>
+              <MetricBox label="Monthly Customers" value={(data.length-annualCount)+" ("+(((data.length-annualCount)/data.length)*100).toFixed(1)+"%)"} color="amber" icon="🗓️"/>
+              <MetricBox label="Avg MRR / Customer" value={fmt(totalMrr/data.length)} color="reach" icon="📊"/>
+              <MetricBox label="Avg Connections" value={fmtD(avgConn)} color="reach" icon="🔗"/>
+              <MetricBox label="Avg Reports/mo" value={fmtD(avgRep)} color="reach" icon="📄"/>
+              <MetricBox label="Avg Downloads/mo" value={fmtD(avgDownloads)} color="reach" icon="⬇️"/>
+              <MetricBox label="Avg Dashboards/mo" value={fmtD(avgDash)} color="reach" icon="📊"/>
+              <MetricBox label="Avg Templates/mo" value={fmtD(avgTemplate)} color="reach" icon="📋"/>
+              <MetricBox label="Avg Budgets Pro/mo" value={fmtD(avgBudgets)} color="reach" icon="💰"/>
             </div>
+
+            {/* MRR by Tier bar chart */}
             <Card>
-              <h2 className="font-semibold text-gray-700 mb-3">Customers by Connection Tier</h2>
+              <h2 className="font-extrabold text-gray-800 text-base mb-5 flex items-center gap-2">💰 MRR by Connection Tier</h2>
+              <div className="space-y-3">
+                {tierBreakdown.filter(t=>t.count>0).map((t,i)=>{
+                  const pct = totalMrr > 0 ? (t.mrr/totalMrr*100) : 0;
+                  const tierColors = ["#023E8A","#0077B6","#0096B7","#00B4D8","#48CAE4","#90E0EF","#ADE8F4","#CAF0F8"];
+                  const color = tierColors[i % tierColors.length];
+                  return (
+                    <div key={t.label}>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="font-semibold text-gray-600">{t.label}</span>
+                        <span className="font-bold" style={{color}}>{fmt(t.mrr)} <span className="text-gray-400 font-normal">· {t.count} customers · {pct.toFixed(1)}%</span></span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                        <div className="h-3 rounded-full transition-all duration-500" style={{width:pct.toFixed(1)+"%",background:`linear-gradient(90deg,${color},${color}bb)`}}/>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+            <Card>
+              <h2 className="font-extrabold text-gray-800 text-base mb-4 flex items-center gap-2"><span>📊</span> Customers by Connection Tier</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead><tr className="text-left text-xs text-gray-500 border-b">
@@ -1225,7 +1468,7 @@ export default function App() {
             </Card>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
-                <h2 className="font-semibold text-gray-700 mb-3">Customers by Tenure</h2>
+                <h2 className="font-extrabold text-gray-800 text-base mb-4">Customers by Tenure</h2>
                 <table className="w-full text-sm">
                   <thead><tr className="text-xs text-gray-500 border-b text-left"><th className="pb-2">Tenure</th><th className="pb-2">Customers</th><th className="pb-2">Avg MRR</th></tr></thead>
                   <tbody>{[["0–6 mo",0,6],["7–12 mo",7,12],["13–24 mo",13,24],["25+ mo",25,9999]].map(([label,lo,hi])=>{
@@ -1235,7 +1478,7 @@ export default function App() {
                 </table>
               </Card>
               <Card>
-                <h2 className="font-semibold text-gray-700 mb-3">Monthly vs Annual Billing</h2>
+                <h2 className="font-extrabold text-gray-800 text-base mb-4">Monthly vs Annual Billing</h2>
                 {["monthly","annual"].map(bt=>{
                   const g=data.filter(c=>c.billing===bt);
                   return (<div key={bt} className="mb-4">
@@ -1247,7 +1490,7 @@ export default function App() {
               </Card>
               {[{label:"Report Usage / mo",field:"reportsPerMonth"},{label:"Dashboard Usage / mo",field:"dashPerMonth"},{label:"Template Usage / mo",field:"templatesPerMonth"},{label:"Budgets Pro Usage / mo",field:"budgetsProPerMonth"}].map(({label,field})=>(
                 <Card key={field}>
-                  <h2 className="font-semibold text-gray-700 mb-3">{label}</h2>
+                  <h2 className="font-extrabold text-gray-800 text-base mb-4">{label}</h2>
                   <table className="w-full text-sm">
                     <thead><tr className="text-xs text-gray-500 border-b text-left"><th className="pb-2">Range</th><th className="pb-2">Customers</th><th className="pb-2">%</th></tr></thead>
                     <tbody>{[[0,0.009,"0"],[0.01,0.999,"<1"],[1,4.999,"1–5"],[5,19.999,"5–20"],[20,99999,"20+"]].map(([lo,hi,lbl])=>{
@@ -1264,17 +1507,21 @@ export default function App() {
         {/* CONFIGURE */}
         {tab==="configure" && rev && (
           <div className="space-y-4">
-            <div className="sticky top-0 z-20 rounded-xl shadow-md p-4" style={{background:"#FFFBEB",border:"2px solid #FCD34D"}}>
+            <div className="sticky top-0 z-20 rounded-2xl p-5" style={{background:"linear-gradient(135deg,#FFFBEB,#FEF3C7)",border:"2px solid #FCD34D",boxShadow:"0 4px 20px rgba(245,158,11,0.2)"}}>
               <div className="flex flex-wrap items-center gap-6">
-                <div><p className="text-xs font-semibold text-amber-700">🧩 Hybrid MRR</p><p className="text-2xl font-bold text-gray-800">{fmt(rev.hybrid.mrr)}</p></div>
-                <div><p className="text-xs text-gray-500">ARR</p><p className="text-xl font-bold text-gray-800">{fmt(rev.hybrid.mrr*12)}</p></div>
-                <div><p className="text-xs text-gray-500">12-mo Cash Flow</p><p className="text-xl font-bold text-gray-800">{fmt(rev.hybrid.cash)}</p></div>
-                <div><p className="text-xs text-gray-500">vs Current MRR</p><p className={"text-xl font-bold "+(rev.hybrid.mrr>=rev.baseline.mrr?"text-green-600":"text-rose-600")}>{fmt(rev.hybrid.mrr-rev.baseline.mrr)}</p></div>
-                <div><p className="text-xs text-gray-500">vs Current ARR</p><p className={"text-xl font-bold "+(rev.hybrid.mrr>=rev.baseline.mrr?"text-green-600":"text-rose-600")}>{fmt((rev.hybrid.mrr-rev.baseline.mrr)*12)}</p></div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-amber-600 mb-0.5">🧩 Hybrid MRR</p>
+                  <p className="text-3xl font-extrabold text-gray-800 leading-none">{fmt(rev.hybrid.mrr)}</p>
+                </div>
+                <div className="h-10 w-px bg-amber-200 hidden sm:block"/>
+                <div><p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">ARR</p><p className="text-xl font-bold text-gray-700">{fmt(rev.hybrid.mrr*12)}</p></div>
+                <div><p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">12-mo Cash Flow</p><p className="text-xl font-bold text-gray-700">{fmt(rev.hybrid.cash)}</p></div>
+                <div><p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">vs Current MRR</p><p className={"text-xl font-bold "+(rev.hybrid.mrr>=rev.baseline.mrr?"text-green-600":"text-rose-600")}>{fmt(rev.hybrid.mrr-rev.baseline.mrr)}</p></div>
+                <div><p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">vs Current ARR</p><p className={"text-xl font-bold "+(rev.hybrid.mrr>=rev.baseline.mrr?"text-green-600":"text-rose-600")}>{fmt((rev.hybrid.mrr-rev.baseline.mrr)*12)}</p></div>
                 <div className="ml-auto flex items-center gap-3">
                   {pctDelta(rev.hybrid.mrr,rev.baseline.mrr)}
-                  <button onClick={()=>setShowSaveModal(true)} className="px-3 py-1.5 rounded-lg text-xs font-semibold transition" style={{background:"#f0fdf4",color:"#166534",border:"1px solid #86efac"}}>💾 Save Scenario</button>
-                  <button onClick={()=>{setSettings(DEFAULT_SETTINGS);setHybrid(DEFAULT_HYBRID);}} className="px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-xs font-semibold hover:bg-rose-100">Reset All</button>
+                  <button onClick={()=>setShowSaveModal(true)} className="px-3 py-1.5 rounded-lg text-xs font-bold transition" style={{background:"#f0fdf4",color:"#166534",border:"1px solid #86efac"}}>💾 Save Scenario</button>
+                  <button onClick={()=>{setSettings(DEFAULT_SETTINGS);setHybrid(DEFAULT_HYBRID);}} className="px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-xs font-bold hover:bg-rose-100">Reset All</button>
                 </div>
               </div>
               <div className="mt-3 space-y-1">
@@ -1337,7 +1584,7 @@ export default function App() {
             <GroupDivider label="🔌 Integrations" color={INTG_COLOR}/>
             {INTEGRATIONS.map(intg=>(
               <SectionCard key={intg} color={INTG_COLOR}>
-                <p className="text-xs font-bold mb-3" style={{color:INTG_COLOR}}>{intg}</p>
+                <p className="text-sm font-extrabold mb-3" style={{color:INTG_COLOR}}>{intg}</p>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div>
                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Pricing Mode</p>
@@ -1419,16 +1666,14 @@ export default function App() {
                 <div>
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Pricing Mode</p>
                   {[
-                    {k:"useTemplateMonthly",   label:"Monthly fee", off:["useTemplatePayPerUse","useTemplatePacks"]},
-                    {k:"useTemplatePayPerUse", label:"Pay-per-use", off:["useTemplateMonthly","useTemplatePacks"]},
-                    {k:"useTemplatePacks",     label:"Packs",       off:["useTemplateMonthly","useTemplatePayPerUse"]},
+                    {k:"useTemplateMonthly",   label:"Monthly fee", off:["useTemplatePacks"]},
+                    {k:"useTemplatePacks",     label:"Packs",       off:["useTemplateMonthly"]},
                   ].map(({k,label,off})=>(
                     <ToggleOpt key={k} label={label} checked={hybrid[k]} onChange={v=>{setH(k)(v);if(v)off.forEach(o=>setH(o)(false));}} color="#f59e0b"/>
                   ))}
                 </div>
                 <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-x-6">
                   <div><p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Monthly Fee</p><Slider label="Per template / mo" value={settings.perTemplateMonthly} min={1} max={100} step={0.5} onChange={set("perTemplateMonthly")} prefix="$" color="#f59e0b"/></div>
-                  <div><p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Pay-Per-Use</p><Slider label="Per use" value={settings.perTemplateUse} min={0.10} max={10} step={0.1} onChange={set("perTemplateUse")} prefix="$" color="#f59e0b"/></div>
                   <div><p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Packs</p><Slider label="Templates per pack" value={settings.templatePackSize} min={1} max={20} step={1} onChange={set("templatePackSize")} suffix=" templates" color="#f59e0b"/><Slider label="Pack price" value={settings.templatePackPrice} min={10} max={300} step={5} onChange={set("templatePackPrice")} prefix="$" color="#f59e0b"/></div>
                 </div>
               </div>
@@ -1442,16 +1687,14 @@ export default function App() {
                 <div>
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Pricing Mode</p>
                   {[
-                    {k:"useBudgetsProMonthly",   label:"Monthly fee", off:["useBudgetsProPayPerUse","useBudgetsProPacks"]},
-                    {k:"useBudgetsProPayPerUse", label:"Pay-per-use", off:["useBudgetsProMonthly","useBudgetsProPacks"]},
-                    {k:"useBudgetsProPacks",     label:"Packs",       off:["useBudgetsProMonthly","useBudgetsProPayPerUse"]},
+                    {k:"useBudgetsProMonthly",   label:"Monthly fee", off:["useBudgetsProPacks"]},
+                    {k:"useBudgetsProPacks",     label:"Packs",       off:["useBudgetsProMonthly"]},
                   ].map(({k,label,off})=>(
                     <ToggleOpt key={k} label={label} checked={hybrid[k]} onChange={v=>{setH(k)(v);if(v)off.forEach(o=>setH(o)(false));}} color="#f43f5e"/>
                   ))}
                 </div>
                 <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-x-6">
                   <div><p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Monthly Fee</p><Slider label="Per Budgets Pro / mo" value={settings.perBudgetsProMonthly} min={5} max={200} step={1} onChange={set("perBudgetsProMonthly")} prefix="$" color="#f43f5e"/></div>
-                  <div><p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Pay-Per-Use</p><Slider label="Per use" value={settings.perBudgetsProUse} min={0.50} max={20} step={0.5} onChange={set("perBudgetsProUse")} prefix="$" color="#f43f5e"/></div>
                   <div><p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Packs</p><Slider label="Uses per pack" value={settings.budgetsProPackSize} min={1} max={20} step={1} onChange={set("budgetsProPackSize")} suffix=" uses" color="#f43f5e"/><Slider label="Pack price" value={settings.budgetsProPackPrice} min={10} max={500} step={5} onChange={set("budgetsProPackPrice")} prefix="$" color="#f43f5e"/></div>
                 </div>
               </div>
@@ -1515,7 +1758,7 @@ export default function App() {
                 </ResponsiveContainer>
               </Card>
               <Card>
-                <h2 className="font-semibold text-gray-700 mb-3 text-sm">Forecast Detail Table</h2>
+                <h2 className="font-extrabold text-gray-800 text-sm mb-4">Forecast Detail Table</h2>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead><tr className="text-xs text-gray-500 border-b text-left">
@@ -1576,7 +1819,7 @@ export default function App() {
             </div>
             {/* Tier summary */}
             <Card>
-              <h2 className="font-semibold text-gray-700 mb-3 text-sm">Hybrid vs Actual MRR by Connection Tier</h2>
+              <h2 className="font-extrabold text-gray-800 text-sm mb-4">Hybrid vs Actual MRR by Connection Tier</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -1691,8 +1934,8 @@ export default function App() {
                   INTEGRATIONS.forEach(intg => { if ((hybrid.intgModes?.[intg]||"none") !== "none") bkCols.push({key:"intg_"+intg, label:intg}); });
                   if (hybrid.useReportMonthly||hybrid.useReportPayPerUse||hybrid.useReportPacks) bkCols.push({key:"rep", label:"Reports"});
                   if (hybrid.useDashMonthly||hybrid.useDashPayPerUse||hybrid.useDashPacks) bkCols.push({key:"dash", label:"Dashboards"});
-                  if (hybrid.useTemplateMonthly||hybrid.useTemplatePayPerUse||hybrid.useTemplatePacks) bkCols.push({key:"tmpl", label:"Templates"});
-                  if (hybrid.useBudgetsProMonthly||hybrid.useBudgetsProPayPerUse||hybrid.useBudgetsProPacks) bkCols.push({key:"bpro", label:"Budgets Pro"});
+                  if (hybrid.useTemplateMonthly||hybrid.useTemplatePacks) bkCols.push({key:"tmpl", label:"Templates"});
+                  if (hybrid.useBudgetsProMonthly||hybrid.useBudgetsProPacks) bkCols.push({key:"bpro", label:"Budgets Pro"});
                   if (hybrid.useMarketplace) bkCols.push({key:"mkt", label:"Marketplace"});
 
                   const getBkVal = (r, key) => {
@@ -1833,10 +2076,8 @@ export default function App() {
               if(h.useDashPayPerUse)     summary.push(`Dashboards: $${s.perDashboardUse}/publish`);
               if(h.useDashPacks)         summary.push(`Dashboards: packs of ${s.dashPackSize} @ $${s.dashPackPrice}`);
               if(h.useTemplateMonthly)   summary.push(`Templates: $${s.perTemplateMonthly}/template/mo`);
-              if(h.useTemplatePayPerUse) summary.push(`Templates: $${s.perTemplateUse}/use`);
               if(h.useTemplatePacks)     summary.push(`Templates: packs of ${s.templatePackSize} @ $${s.templatePackPrice}`);
               if(h.useBudgetsProMonthly)   summary.push(`Budgets Pro: $${s.perBudgetsProMonthly}/use/mo`);
-              if(h.useBudgetsProPayPerUse) summary.push(`Budgets Pro: $${s.perBudgetsProUse}/use`);
               if(h.useBudgetsProPacks)     summary.push(`Budgets Pro: packs of ${s.budgetsProPackSize} @ $${s.budgetsProPackPrice}`);
               if(h.useMarketplace)         summary.push(`Marketplace: ${s.marketplaceTake}% take`);
               if(summary.length===0)       summary.push("No pricing active");
@@ -1890,6 +2131,9 @@ export default function App() {
             })}
           </div>
         )}
+
+        {/* INDUSTRY */}
+        {tab==="industry" && <IndustryTab />}
 
         {/* SAVE MODAL */}
         {showSaveModal && (
